@@ -3,7 +3,6 @@ package config_manger
 import (
 	"fmt"
 	"github.com/coreos/etcd/clientv3"
-	"go.uber.org/zap"
 	"time"
 )
 
@@ -39,18 +38,17 @@ func DefaultManger(endpoints []string) *Manger {
 		client:  client,
 		kv:      kv,
 		watcher: watcher,
-		appKey:  "",
 	}
 }
 
-func SetLogger(logger *zap.Logger) Option {
+func SetApp(app string) Option {
 	return func(m *Manger) {
-		m.Log = logger
+		m.app = app
 	}
 }
 
-func SetAppsKey(appKey string) Option {
+func SetEnv(env string) Option {
 	return func(m *Manger) {
-		m.appKey = appKey
+		m.env = env
 	}
 }

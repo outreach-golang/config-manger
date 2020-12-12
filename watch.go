@@ -10,7 +10,7 @@ import (
 
 // watch 一个配置文件下 单个key
 func (m *Manger) WatchOne(name string, changes chan<- *clientv3.Event) {
-	var key = fmt.Sprintf("%s/%s", m.appKey, name)
+	var key = fmt.Sprintf("/%s/%s", m.appKey, name)
 	m.watch(key, changes)
 }
 
@@ -31,7 +31,6 @@ func (m *Manger) watch(key string, changes chan<- *clientv3.Event, opts ...clien
 		watchRespChan clientv3.WatchChan
 		watchResp     clientv3.WatchResponse
 		event         *clientv3.Event
-		//pfxWch        chan *clientv3.Event
 	)
 	//开始监听
 	watchRespChan = m.watcher.Watch(context.TODO(), key, opts...)
@@ -40,13 +39,14 @@ func (m *Manger) watch(key string, changes chan<- *clientv3.Event, opts ...clien
 	wg.Add(1)
 	go func() {
 		defer func() {
-			//close(pfxWch)
 			wg.Done()
 		}()
 		for watchResp = range watchRespChan {
 			for _, event = range watchResp.Events {
 				switch event.Type {
 				case mvccpb.PUT:
+					key := string(event.Kv.Key)[len(m.appKey)+1:]
+					event.Kv.Key = []byte(key)
 					changes <- event
 					fmt.Println("修改为:", string(event.Kv.Value), "Revision:", event.Kv.CreateRevision, event.Kv.ModRevision)
 				case mvccpb.DELETE:

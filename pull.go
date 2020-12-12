@@ -33,6 +33,7 @@ func (m *Manger) pull(name string, configs map[string]string, opts ...clientv3.O
 	}
 
 	for _, kvs = range getResp.Kvs {
-		configs[string(kvs.Key)] = string(kvs.Value)
+		key := string(kvs.Key)[len(m.appKey)+1:]
+		configs[key] = string(kvs.Value)
 	}
 }

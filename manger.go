@@ -2,22 +2,21 @@ package config_manger
 
 import (
 	"errors"
+	"fmt"
 	"github.com/coreos/etcd/clientv3"
-	"go.uber.org/zap"
 )
 
 type Manger struct {
-	config             clientv3.Config
-	client             *clientv3.Client
-	kv                 clientv3.KV
-	watcher            clientv3.Watcher
-	getResp            *clientv3.GetResponse
-	watchStartRevision int64
-	watchRespChan      <-chan clientv3.WatchResponse
-	watchResp          clientv3.WatchResponse
-	appKey             string
-	Log                *zap.Logger
-	err                error
+	config        clientv3.Config
+	client        *clientv3.Client
+	kv            clientv3.KV
+	watcher       clientv3.Watcher
+	getResp       *clientv3.GetResponse
+	watchRespChan <-chan clientv3.WatchResponse
+	watchResp     clientv3.WatchResponse
+	app           string
+	env           string
+	appKey        string
 }
 
 func NewManger(endpoints []string, ops ...Option) (*Manger, error) {
@@ -32,9 +31,11 @@ func NewManger(endpoints []string, ops ...Option) (*Manger, error) {
 		op(manger)
 	}
 
-	if manger.appKey == "" {
-		return nil, errors.New("项目apps name必填")
+	if manger.app == "" || manger.env == "" {
+		return nil, errors.New("项目app, env 必填")
 	}
+
+	manger.appKey = fmt.Sprintf("/%s/%s", manger.app, manger.env)
 
 	return manger, nil
 }
