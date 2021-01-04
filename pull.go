@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/coreos/etcd/clientv3"
 	"strings"
+	"time"
 )
 
 func (m *Manger) PullOne(name string) []byte {
@@ -31,12 +32,14 @@ func (m *Manger) PullAppConfigs() []byte {
 
 func (m *Manger) pull(name string, opts ...clientv3.OpOption) []byte {
 	var (
+		ctx     context.Context
 		value   []byte
 		getResp *clientv3.GetResponse
 		err     error
 	)
+	ctx, _ = context.WithTimeout(context.Background(), 500*time.Millisecond)
 
-	if getResp, err = m.kv.Get(context.TODO(), name, opts...); err != nil {
+	if getResp, err = m.kv.Get(ctx, name, opts...); err != nil {
 		fmt.Println(err)
 	}
 

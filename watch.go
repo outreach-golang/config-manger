@@ -10,8 +10,8 @@ import (
 
 // watch 一个配置文件下 单个key
 func (m *Manger) WatchOne(name string, changes chan<- *clientv3.Event) {
-	var key = fmt.Sprintf("/%s/%s", m.appKey, name)
-	m.watch(key, changes)
+	var key = fmt.Sprintf("%s/%s", m.appKey, name)
+	m.watch(key, changes, clientv3.WithPrevKV())
 }
 
 //watch 一个 配置文件下多个key
@@ -23,7 +23,7 @@ func (m *Manger) WatchKvs(names []string, changes chan<- *clientv3.Event) {
 
 // watch 整个配置文件变化
 func (m *Manger) WatchOverAll(changes chan<- *clientv3.Event) {
-	m.watch(m.appKey, changes, clientv3.WithPrefix())
+	m.watch(m.appKey, changes, clientv3.WithPrefix(), clientv3.WithPrevKV())
 }
 
 func (m *Manger) watch(key string, changes chan<- *clientv3.Event, opts ...clientv3.OpOption) {
@@ -43,15 +43,17 @@ func (m *Manger) watch(key string, changes chan<- *clientv3.Event, opts ...clien
 		}()
 		for watchResp = range watchRespChan {
 			for _, event = range watchResp.Events {
+				key := string(event.Kv.Key)[len(m.appKey)+1:]
+				event.Kv.Key = []byte(key)
+
 				switch event.Type {
 				case mvccpb.PUT:
-					key := string(event.Kv.Key)[len(m.appKey)+1:]
-					event.Kv.Key = []byte(key)
-					changes <- event
-					fmt.Println("修改为:", string(event.Kv.Value), "Revision:", event.Kv.CreateRevision, event.Kv.ModRevision)
+					fmt.Println("修改key:", string(event.Kv.Key), "Revision:", event.Kv.CreateRevision, event.Kv.ModRevision)
 				case mvccpb.DELETE:
+					event.Kv.Value = event.PrevKv.Value
 					fmt.Println("删除了", "Revision:", event.Kv.ModRevision)
 				}
+				changes <- event
 			}
 		}
 	}()
