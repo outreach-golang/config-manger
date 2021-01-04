@@ -18,7 +18,7 @@ func (m *Manger) PullOne(name string) []byte {
 }
 
 func (m *Manger) PullKvs(names []string) []byte {
-	var buffers = make([]byte, 0)
+	var buffers []byte
 	for _, name := range names {
 		buffers = append(buffers, m.PullOne(name)...)
 	}
@@ -26,15 +26,16 @@ func (m *Manger) PullKvs(names []string) []byte {
 }
 
 func (m *Manger) PullAppConfigs() []byte {
-	return m.pull(m.appKey)
+	return m.pull(m.appKey, clientv3.WithPrefix())
 }
 
 func (m *Manger) pull(name string, opts ...clientv3.OpOption) []byte {
 	var (
+		value   []byte
 		getResp *clientv3.GetResponse
 		err     error
 	)
-	fmt.Println("----", name)
+
 	if getResp, err = m.kv.Get(context.TODO(), name, opts...); err != nil {
 		fmt.Println(err)
 	}
@@ -43,5 +44,9 @@ func (m *Manger) pull(name string, opts ...clientv3.OpOption) []byte {
 		fmt.Println("not found the key: ", name)
 		return []byte{}
 	}
-	return getResp.Kvs[0].Value
+
+	for _, kv := range getResp.Kvs {
+		value = append(value, kv.Value...)
+	}
+	return value
 }
